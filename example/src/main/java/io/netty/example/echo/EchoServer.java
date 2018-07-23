@@ -40,6 +40,7 @@ public final class EchoServer {
 
     public static void main(String[] args) throws Exception {
         // Configure SSL.
+        // 配置SSL
         final SslContext sslCtx;
         if (SSL) {
             SelfSignedCertificate ssc = new SelfSignedCertificate();
@@ -49,16 +50,18 @@ public final class EchoServer {
         }
 
         // Configure the server.
-        EventLoopGroup bossGroup = new NioEventLoopGroup(1);
-        EventLoopGroup workerGroup = new NioEventLoopGroup();
+        EventLoopGroup bossGroup = new NioEventLoopGroup(1);//创建boss线程组 用于服务端接受客户端的连接
+        EventLoopGroup workerGroup = new NioEventLoopGroup();//创建worker线程组 用于进行SocketChannel的数据读写
+        //创建EchoServerHandler对象
         final EchoServerHandler serverHandler = new EchoServerHandler();
         try {
+            //创建ServerBootstrap对象
             ServerBootstrap b = new ServerBootstrap();
-            b.group(bossGroup, workerGroup)
-             .channel(NioServerSocketChannel.class)
-             .option(ChannelOption.SO_BACKLOG, 100)
-             .handler(new LoggingHandler(LogLevel.INFO))
-             .childHandler(new ChannelInitializer<SocketChannel>() {
+            b.group(bossGroup, workerGroup)//设置使用的EventLoopGroup
+             .channel(NioServerSocketChannel.class)//设置要被实例化的为NioServerSocketChannel类
+             .option(ChannelOption.SO_BACKLOG, 100)// 设置 NioServerSocketChannel 的可选项
+             .handler(new LoggingHandler(LogLevel.INFO))//设置NioServerSocketChannel的处理器
+             .childHandler(new ChannelInitializer<SocketChannel>() {//设置连入服务端的Client的SocketChannel的处理器
                  @Override
                  public void initChannel(SocketChannel ch) throws Exception {
                      ChannelPipeline p = ch.pipeline();
@@ -71,12 +74,15 @@ public final class EchoServer {
              });
 
             // Start the server.
+            //绑定端口，并同步等待成功，即启动服务端
             ChannelFuture f = b.bind(PORT).sync();
 
             // Wait until the server socket is closed.
+            //监听服务端关闭，并阻塞等待
             f.channel().closeFuture().sync();
         } finally {
             // Shut down all event loops to terminate all threads.
+            //优雅关闭俩个EventLoopGroup对象
             bossGroup.shutdownGracefully();
             workerGroup.shutdownGracefully();
         }
